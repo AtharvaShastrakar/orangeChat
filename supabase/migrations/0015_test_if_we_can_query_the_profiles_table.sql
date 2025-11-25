@@ -1,0 +1,1 @@
+SELECT COUNT(*) as profile_count FROM profiles;
