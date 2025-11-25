@@ -28,17 +28,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const getSession = async () => {
       try {
+        console.log('AuthProvider: Getting session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
+        console.log('AuthProvider: Session result:', { session, error });
+        
         if (error) {
-          console.error('Session error:', error);
+          console.error('AuthProvider: Session error:', error);
           setError(error.message);
         } else {
           setUser(session?.user ?? null);
         }
         setLoading(false);
       } catch (err) {
-        console.error('Auth context error:', err);
+        console.error('AuthProvider: Auth context error:', err);
         setError('Failed to initialize authentication');
         setLoading(false);
       }
@@ -47,7 +50,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     getSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
+      console.log('AuthProvider: Auth state changed:', event, session);
       setUser(session?.user ?? null);
       setLoading(false);
       setError(undefined);

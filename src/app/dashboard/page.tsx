@@ -25,6 +25,8 @@ export default function DashboardPage() {
   console.log('Dashboard - Auth state:', { user, loading, error });
 
   useEffect(() => {
+    console.log('Dashboard useEffect triggered:', { user, loading, error });
+    
     if (error) {
       console.error('Auth error in dashboard:', error);
       toast.error('Authentication error');
@@ -43,7 +45,7 @@ export default function DashboardPage() {
     }
 
     if (user) {
-      console.log('User authenticated, fetching rooms');
+      console.log('User authenticated, fetching rooms for user:', user.id);
       fetchUserRooms();
     }
   }, [user, loading, error]);
@@ -52,7 +54,7 @@ export default function DashboardPage() {
     if (!user) return;
 
     try {
-      console.log('Fetching rooms for user:', user.id);
+      console.log('Fetching room members for user:', user.id);
       const { data: memberData, error: memberError } = await supabase
         .from('room_members')
         .select('room_id, role')
@@ -66,12 +68,15 @@ export default function DashboardPage() {
       console.log('Room members data:', memberData);
 
       const roomIds = memberData?.map((member) => member.room_id) || [];
+      console.log('Room IDs found:', roomIds);
+      
       if (roomIds.length === 0) {
         console.log('No rooms found for user');
         setRooms([]);
         return;
       }
 
+      console.log('Fetching room details for IDs:', roomIds);
       const { data: roomData, error: roomError } = await supabase
         .from('rooms')
         .select('id, name, group_id')
@@ -87,10 +92,13 @@ export default function DashboardPage() {
 
       // Set active room to first room if none selected
       if (roomData && roomData.length > 0 && !activeRoom) {
+        console.log('Setting active room to first room:', roomData[0]);
         setActiveRoom(roomData[0]);
         const memberRole = memberData.find((member) => member.room_id === roomData[0].id)?.role;
         setUserRole(memberRole || 'member');
-        console.log('Set active room:', roomData[0], 'with role:', memberRole);
+        console.log('User role for room:', memberRole);
+      } else {
+        console.log('No rooms available to set as active');
       }
     } catch (error) {
       console.error('Error fetching user rooms:', error);
@@ -116,6 +124,7 @@ export default function DashboardPage() {
   };
 
   if (loading) {
+    console.log('Dashboard: Loading state');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading dashboard...</div>
@@ -124,6 +133,7 @@ export default function DashboardPage() {
   }
 
   if (error) {
+    console.log('Dashboard: Error state');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg text-destructive">Authentication error: {error}</div>
@@ -131,6 +141,7 @@ export default function DashboardPage() {
     );
   }
 
+  console.log('Dashboard: Rendering main layout');
   return (
     <div className="h-screen flex">
       <Sidebar

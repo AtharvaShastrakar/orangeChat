@@ -32,9 +32,17 @@ export function ChatInterface({ activeRoom, userRole }: ChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (!activeRoom) return;
+  console.log('ChatInterface: Active room:', activeRoom);
+  console.log('ChatInterface: User role:', userRole);
+  console.log('ChatInterface: Current user:', user);
 
+  useEffect(() => {
+    if (!activeRoom) {
+      console.log('ChatInterface: No active room, skipping message fetch');
+      return;
+    }
+
+    console.log('ChatInterface: Fetching messages for room:', activeRoom.id);
     const fetchMessages = async () => {
       const { data, error } = await supabase
         .from('messages')
@@ -45,6 +53,7 @@ export function ChatInterface({ activeRoom, userRole }: ChatInterfaceProps) {
       if (error) {
         console.error('Error fetching messages:', error);
       } else {
+        console.log('Messages fetched:', data?.length);
         setMessages(data || []);
       }
     };
@@ -52,6 +61,7 @@ export function ChatInterface({ activeRoom, userRole }: ChatInterfaceProps) {
     fetchMessages();
 
     // Subscribe to real-time messages
+    console.log('ChatInterface: Setting up real-time subscription for room:', activeRoom.id);
     const subscription = supabase
       .channel(`room:${activeRoom.id}`)
       .on(
@@ -63,6 +73,7 @@ export function ChatInterface({ activeRoom, userRole }: ChatInterfaceProps) {
           filter: `room_id=eq.${activeRoom.id}`,
         },
         async (payload) => {
+          console.log('Real-time message INSERT:', payload);
           const { data: profile } = await supabase
             .from('profiles')
             .select('email, full_name')
@@ -87,12 +98,14 @@ export function ChatInterface({ activeRoom, userRole }: ChatInterfaceProps) {
           filter: `room_id=eq.${activeRoom.id}`,
         },
         (payload) => {
+          console.log('Real-time message DELETE:', payload);
           setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
         }
       )
       .subscribe();
 
     return () => {
+      console.log('ChatInterface: Unsubscribing from real-time updates');
       subscription.unsubscribe();
     };
   }, [activeRoom]);
@@ -103,10 +116,14 @@ export function ChatInterface({ activeRoom, userRole }: ChatInterfaceProps) {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !activeRoom || !user) return;
+    if (!newMessage.trim() || !activeRoom || !user) {
+      console.log('Cannot send message - missing requirements');
+      return;
+    }
 
     setLoading(true);
     try {
+      console.log('Sending message:', newMessage);
       const { error } = await supabase
         .from('messages')
         .insert([
@@ -120,7 +137,9 @@ export function ChatInterface({ activeRoom, userRole }: ChatInterfaceProps) {
       if (error) throw error;
 
       setNewMessage('');
+      console.log('Message sent successfully');
     } catch (error) {
+      console.error('Failed to send message:', error);
       toast.error('Failed to send message');
     } finally {
       setLoading(false);
@@ -129,18 +148,22 @@ export function ChatInterface({ activeRoom, userRole }: ChatInterfaceProps) {
 
   const handleDeleteMessage = async (messageId: string) => {
     try {
+      console.log('Deleting message:', messageId);
       const { error } = await supabase
         .from('messages')
         .delete()
         .eq('id', messageId);
 
       if (error) throw error;
+      console.log('Message deleted successfully');
     } catch (error) {
+      console.error('Failed to delete message:', error);
       toast.error('Failed to delete message');
     }
   };
 
   if (!activeRoom) {
+    console.log('ChatInterface: No active room selected');
     return (
       <div className="flex-1 flex items-center justify-center text-muted-foreground">
         Select a room to start chatting
@@ -148,6 +171,7 @@ export function ChatInterface({ activeRoom, userRole }: ChatInterfaceProps) {
     );
   }
 
+  console.log('ChatInterface: Rendering chat interface with', messages.length, 'messages');
   return (
     <div className="flex-1 flex flex-col">
       <div className="flex-1 overflow-y-auto p-6">
