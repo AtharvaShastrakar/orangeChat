@@ -20,17 +20,22 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Attempting login with:', email);
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.error('Login error:', error);
         toast.error(error.message);
       } else {
+        console.log('Login successful:', data);
+        toast.success('Login successful!');
         router.push('/dashboard');
       }
     } catch (error) {
+      console.error('Login exception:', error);
       toast.error('An error occurred during login');
     } finally {
       setLoading(false);
@@ -54,6 +59,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                placeholder="Enter your email"
               />
             </div>
             <div className="space-y-2">
@@ -64,6 +70,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                placeholder="Enter your password"
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>

@@ -4,30 +4,37 @@ import type { NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
   const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req: request, res });
   
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  try {
+    const supabase = createMiddlewareClient({ req: request, res });
+    
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-  // Redirect to login if not authenticated
-  if (!session && request.nextUrl.pathname.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  // Check if email is confirmed for dashboard access
-  if (session && request.nextUrl.pathname.startsWith('/dashboard')) {
-    if (!session.user.email_confirmed_at) {
-      return NextResponse.redirect(new URL('/verify-email', request.url));
+    // Redirect to login if not authenticated
+    if (!session && request.nextUrl.pathname.startsWith('/dashboard')) {
+      return NextResponse.redirect(new URL('/login', request.url));
     }
-  }
 
-  // Redirect authenticated users away from auth pages
-  if (session && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
+    // Check if email is confirmed for dashboard access
+    if (session && request.nextUrl.pathname.startsWith('/dashboard')) {
+      if (!session.user.email_confirmed_at) {
+        return NextResponse.redirect(new URL('/verify-email', request.url));
+      }
+    }
 
-  return res;
+    // Redirect authenticated users away from auth pages
+    if (session && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    return res;
+  } catch (error) {
+    console.error('Middleware error:', error);
+    // If there's an error, allow the request to proceed but log it
+    return res;
+  }
 }
 
 export const config = {
